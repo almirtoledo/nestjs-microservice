@@ -1,0 +1,56 @@
+services:
+  ex-kafka:
+    image: bitnami/kafka:latest
+    depends_on:
+      - ex-zookeeper
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ENABLE_KRAFT=no
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=ex-zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://ex-kafka:9092,PLAINTEXT_HOST://localhost:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - "./kafka:/bitnami/kafka"
+    networks:
+      - ex
+
+  ex-zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - ex
+
+  ex-kafka-ui:
+    image: provectuslabs/kafka-ui
+    depends_on:
+      - ex-kafka
+      - ex-zookeeper
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=dev
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=ex-kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=ex-zookeeper:2181
+    networks:
+      - ex
+
+  ex-mariadb:
+    image: mariadb:latest
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=dev
+    volumes:
+      - ./mariadb:/var/lib/mariadb
+    ports:
+      - "3306:3306"
+
+networks:
+  ex:
+    driver: bridge
