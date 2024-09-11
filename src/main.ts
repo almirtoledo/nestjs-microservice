@@ -1,5 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as expressBasicAuth from 'express-basic-auth';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -20,7 +22,23 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({ origin: '*' });
-  app.use(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe());
+
+  app.use(
+    ['/api', '/api-json'],
+    expressBasicAuth({
+      challenge: true,
+      users: { root: 'root' },
+    }),
+  );
+
+  const config = new DocumentBuilder()
+    .setTitle('Micro Service')
+    .setVersion('1.0.0')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
 }
